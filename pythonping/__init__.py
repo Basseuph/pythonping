@@ -18,14 +18,16 @@ def ping(target,
          df=False,
          verbose=False,
          out=sys.stdout,
-         match=False):
+         match=False,
+         overall_timeout=float("inf")
+    ):
     """Pings a remote host and handles the responses
 
     :param target: The remote hostname or IP address to ping
     :type target: str
     :param timeout: Time in seconds before considering each non-arrived reply permanently lost.
     :type timeout: Union[int, float]
-    :param count: How many times to attempt the ping
+    :param count: How many times to attempt the ping, set to None for infinite loop (or overall_timeout based control)
     :type count: int
     :param size: Size of the entire packet to send
     :type size: int
@@ -46,6 +48,8 @@ def ping(target,
     8.8.8.8 with 1000 bytes and reply is truncated to only the first 74 of request payload with packet identifiers
     the same in request and reply)
     :type match: bool
+    :param overall_timeout: the overall time the ping should be executed, default postitive infinity is chosen as per Linux default behavior of ping command
+    :type overall_timeout: float
     :return: List with the result of each ping
     :rtype: executor.ResponseList"""
     provider = payload_provider.Repeat(b'', 0)
@@ -70,8 +74,11 @@ def ping(target,
             SEED_IDs.append(seed_id)
             break
 
-    comm = executor.Communicator(target, provider, timeout, socket_options=options, verbose=verbose, output=out,
-                                 seed_id=seed_id)
+    comm = executor.Communicator(target, provider, timeout,
+                                 socket_options=options, verbose=verbose,
+                                 output=out, seed_id=seed_id,
+                                 overall_timeout=overall_timeout
+                                )
     comm.run(match_payloads=match)
 
     SEED_IDs.remove(seed_id)

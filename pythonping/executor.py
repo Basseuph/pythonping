@@ -2,6 +2,7 @@
 
 import os
 import sys
+import time
 from . import icmp
 from . import network
 
@@ -226,8 +227,10 @@ class ResponseList:
 
 class Communicator:
     """Instance actually communicating over the network, sending messages and handling responses"""
-    def __init__(self, target, payload_provider, timeout, socket_options=(), seed_id=None,
-                 verbose=False, output=sys.stdout):
+    def __init__(self, target, payload_provider, timeout, socket_options=(),
+                 seed_id=None, verbose=False, output=sys.stdout,
+                 overall_timeout=float("inf")
+                ):
         """Creates an instance that can handle communication with the target device
 
         :param target: IP or hostname of the remote device
@@ -243,12 +246,16 @@ class Communicator:
         :param verbose: Flag to enable verbose mode, defaults to False
         :type verbose: bool
         :param output: File where to write verbose output, defaults to stdout
-        :type output: file"""
+        :type output: file
+        :param overall_timeout: the overall time the ping should be executed, default postitive infinity is chosen as per Linux default behavior of ping command
+        :type overall_timeout: float
+        """
         self.socket = network.Socket(target, 'icmp', source=None, options=socket_options)
         self.provider = payload_provider
         self.timeout = timeout
         self.responses = ResponseList(verbose=verbose, output=output)
         self.seed_id = seed_id
+        self.overall_timeout = overall_timeout
         # note that to make Communicator instances thread safe, the seed ID must be unique per thread
         if self.seed_id is None:
             self.seed_id = os.getpid() & 0xFFFF
@@ -327,6 +334,7 @@ class Communicator:
         self.responses.clear()
         identifier = self.seed_id
         seq = 1
+        self.start_time = time.time()
         for payload in self.provider:
             payload_bytes_sent = self.send_ping(identifier, seq, payload)
             if not match_payloads:
@@ -335,3 +343,7 @@ class Communicator:
                 self.responses.append(self.listen_for(identifier, self.timeout, payload_bytes_sent))
 
             seq = self.increase_seq(seq)
+            self.stop_time = time.time()
+            self.overall_runtime = self.stop_time - self.start_time
+            if self.overall_runtime >= self.overall_timeout:
+                break
