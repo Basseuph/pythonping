@@ -229,6 +229,7 @@ class Communicator:
     """Instance actually communicating over the network, sending messages and handling responses"""
     def __init__(self, target, payload_provider, timeout, socket_options=(),
                  seed_id=None, verbose=False, output=sys.stdout,
+                 interval=float(1),
                  overall_timeout=float("inf")
                 ):
         """Creates an instance that can handle communication with the target device
@@ -247,6 +248,8 @@ class Communicator:
         :type verbose: bool
         :param output: File where to write verbose output, defaults to stdout
         :type output: file
+        :param interval: the interval between two consecutive ping echo requests, defaults 1 chosen as per Linux default behavior of the ping command
+        :type interval: float
         :param overall_timeout: the overall time the ping should be executed, default postitive infinity is chosen as per Linux default behavior of ping command
         :type overall_timeout: float
         """
@@ -255,6 +258,7 @@ class Communicator:
         self.timeout = timeout
         self.responses = ResponseList(verbose=verbose, output=output)
         self.seed_id = seed_id
+        self.interval = interval
         self.overall_timeout = overall_timeout
         # note that to make Communicator instances thread safe, the seed ID must be unique per thread
         if self.seed_id is None:

@@ -19,6 +19,7 @@ def ping(target,
          verbose=False,
          out=sys.stdout,
          match=False,
+         interval=float(1),
          overall_timeout=float("inf")
     ):
     """Pings a remote host and handles the responses
@@ -48,6 +49,8 @@ def ping(target,
     8.8.8.8 with 1000 bytes and reply is truncated to only the first 74 of request payload with packet identifiers
     the same in request and reply)
     :type match: bool
+    :param interval: the interval between two consecutive ping echo requests, defaults 1 chosen as per Linux default behavior of the ping command
+    :type interval: float
     :param overall_timeout: the overall time the ping should be executed, default postitive infinity is chosen as per Linux default behavior of ping command
     :type overall_timeout: float
     :return: List with the result of each ping
@@ -77,6 +80,7 @@ def ping(target,
     comm = executor.Communicator(target, provider, timeout,
                                  socket_options=options, verbose=verbose,
                                  output=out, seed_id=seed_id,
+                                 interval=interval,
                                  overall_timeout=overall_timeout
                                 )
     comm.run(match_payloads=match)
