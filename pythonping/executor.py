@@ -218,6 +218,7 @@ class ResponseList:
     def __len__(self):
         return len(self._responses)
 
+    # FIXME use python platform dependend encoding for string EOL
     def __repr__(self):
         ret = ''
         for response in self._responses:
