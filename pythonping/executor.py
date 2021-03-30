@@ -150,6 +150,8 @@ class ResponseList:
         self.rtt_min = 0
         self.rtt_max = 0
         self.packets_lost = 0
+        self.start_ping = 0
+        self.stop_ping = 0
         for response in initial_set:
             self.append(response)
 
@@ -187,6 +189,10 @@ class ResponseList:
     def rtt_avg_ms(self):
         return represent_seconds_in_ms(self.rtt_avg)
 
+    @property
+    def runtime(self):
+        return self.stop_time - self.start_time
+
     def clear(self):
         self._responses = []
 
@@ -218,6 +224,8 @@ class ResponseList:
             ret += '{0}\r\n'.format(response)
         ret += '\r\n'
         ret += 'Round Trip Times min/avg/max is {0}/{1}/{2} ms'.format(self.rtt_min_ms, self.rtt_avg_ms, self.rtt_max_ms)
+        ret += '\r\n'
+        ret += 'Total runtime is {0} s'.format(round(self.runtime*100)/100)
         return ret
 
     def __iter__(self):
@@ -339,6 +347,7 @@ class Communicator:
         identifier = self.seed_id
         seq = 1
         self.start_time = time.time()
+        self.responses.start_time = self.start_time
         for payload in self.provider:
             payload_bytes_sent = self.send_ping(identifier, seq, payload)
             if not match_payloads:
@@ -346,8 +355,12 @@ class Communicator:
             else:
                 self.responses.append(self.listen_for(identifier, self.timeout, payload_bytes_sent))
 
-            seq = self.increase_seq(seq)
             self.stop_time = time.time()
+            self.responses.stop_time = self.stop_time
             self.overall_runtime = self.stop_time - self.start_time
-            if self.overall_runtime >= self.overall_timeout:
+            if self.overall_runtime + self.interval >= self.overall_timeout:
                 break
+
+            time.sleep(self.interval)
+
+            seq = self.increase_seq(seq)
